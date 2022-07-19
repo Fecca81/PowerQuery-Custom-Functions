@@ -1,0 +1,44 @@
+/*
+    The formula create a table that contains ranges of numbers in a sort of exponential progression.
+    This formula take 3 arguments:
+    1) "factor" is a number that adjust the size of dthe segments
+    2) "firstUntil" is the top of the fist range, this range starts at 0 and ends in "firstUntil", ($0..$1,5M)
+    3) "ListOfNumbers" is a list where are the numbers that will be evatluated
+*/
+(
+    factor as number,
+    firstUntil as number,
+    ListOfNumbers
+    ) =>
+
+let
+    maxima = List.Max(ListOfNumbers),
+    red = Text.Length(Text.From(firstUntil)) - 1,
+    lista =
+        List.Generate(
+           () => firstUntil,
+            each _ < maxima,
+            each  Number.Round(Number.Power(_, factor), - red)
+        ),
+    #"Converted to Table" = Table.FromList(lista, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    tabla0 = #table(type table [Column1=Decimal.Type],{{0}, {Number.Round(Number.Power( List.Max(#"Converted to Table"[Column1]), factor), - red)}}),
+    #"Appended Query" = Table.Combine({#"Converted to Table", tabla0}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Appended Query",{{"Column1", Currency.Type}}),
+    #"Sorted Rows" = Table.Sort(#"Changed Type",{{"Column1", Order.Ascending}}),
+    #"Added Index" = Table.AddIndexColumn(#"Sorted Rows", "Index", 1, 1, Int64.Type),
+    #"Added Index1" = Table.AddIndexColumn(#"Added Index", "Index.1", 0, 1, Int64.Type),
+    #"Merged Queries" = Table.NestedJoin(#"Added Index1", {"Index"}, #"Added Index1", {"Index.1"}, "Added Index1", JoinKind.LeftOuter),
+    #"Expanded Added Index1" = Table.ExpandTableColumn(#"Merged Queries", "Added Index1", {"Column1"}, {"until"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Expanded Added Index1",{{"Column1", "from"}}),
+    #"Filtered Rows" = Table.SelectRows(#"Renamed Columns", each ([until] <> null)),
+    #"Removed Columns" = Table.RemoveColumns(#"Filtered Rows",{"Index", "Index.1"}),
+    #"Added to Column" = Table.TransformColumns(#"Removed Columns", {{"from", each _ + 1, Currency.Type}}),
+    
+    // Optional Currency Conersion    
+    #"Added Custom" = Table.AddColumn(#"Added to Column", "Ranges", each fnAdaptMeasure([from]) & ".." & fnAdaptMeasure([until])),
+    #"Replaced Value1" = Table.ReplaceValue(#"Added Custom",",0","",Replacer.ReplaceText,{"Ranges"}),
+    // this option uses another custom function
+    
+    #"Changed Type1" = Table.TransformColumnTypes(#"Replaced Value1",{{"until", Currency.Type}})
+in
+    #"Changed Type1"
