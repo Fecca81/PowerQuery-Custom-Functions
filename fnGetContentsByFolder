@@ -1,0 +1,5 @@
+(pathFolder as text) =>
+let
+    result = Folder.Contents(pathFolder)
+in
+    result
