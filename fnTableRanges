@@ -35,7 +35,7 @@ let
     #"Added to Column" = Table.TransformColumns(#"Removed Columns", {{"from", each _ + 1, Currency.Type}}),
     
     // Optional Currency Conersion    
-    #"Added Custom" = Table.AddColumn(#"Added to Column", "Ranges", each fnAdaptMeasure([from]) & ".." & fnAdaptMeasure([until])),
+    #"Added Custom" = Table.AddColumn(#"Added to Column", "Ranges", each fnFormatCurrency_kM_M_k([from]) & ".." & fnFormatCurrency_kM_M_k([until])),
     #"Replaced Value1" = Table.ReplaceValue(#"Added Custom",",0","",Replacer.ReplaceText,{"Ranges"}),
     // this option uses another custom function
     
