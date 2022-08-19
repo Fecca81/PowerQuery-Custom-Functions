@@ -1,5 +1,5 @@
 //
-  This formula creaates a Calendar table from 2 given dates.
+  This formula creates a Calendar table from 2 given dates.
 //
 (
     FromDate as date,
